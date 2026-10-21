@@ -26,36 +26,51 @@ Plan tonight. Execute tomorrow. A private, local-first execution and accountabil
 
 Shortcuts: `/` park a thought, `F` focus mode, `D` I'm drifting.
 
+## Sync across devices
+
+Same setup as VishwarimaOS: **Firebase Authentication** (Google sign-in), **Cloud Firestore** with an offline cache, and **Firebase Hosting**, all on the free Spark plan.
+
+- Signed out, the app works fully on one device (local storage).
+- Sign in under **Settings → Sync across devices**. The first device to sign in uploads its data; every other device then follows the account. That device's previous local data is kept in `localStorage["carpe-diem-v2-before-sync"]`.
+- Data lives at `users/{uid}/...`, one document per task, goal, block, session, parked thought and day, so edits from two devices merge instead of overwriting each other. Settings and the running timer live on `users/{uid}`, so a session started on the laptop shows on the phone.
+- `firestore.rules` lets only the signed-in owner read or write their own data.
+
 ## Develop
 
 ```sh
 npm install
-npm run dev            # http://localhost:5173
-npm run build          # type-check + production build into dist/
-npx vite preview --port 4173 &
-npm run test:e2e       # 19 browser checks covering the PRD's 7 critical journeys
+cp .env.example .env.local     # fill in the Firebase web config, or leave empty for local-only
+npm run dev                    # http://localhost:5173
 ```
 
-## Deploy to Google Cloud
-
-**Cloud Run** (container built by Cloud Build from the Dockerfile, nginx serving `dist/`):
+### Checks
 
 ```sh
-gcloud auth login
-./deploy.sh YOUR_PROJECT_ID us-central1
+npm run build
+npx vite preview --port 4173 & npm run test:e2e        # 19 checks: the PRD's 7 critical journeys
+npm run build:emulators && npm run test:sync           # 6 checks: two devices, offline, security rules
 ```
 
-**Firebase Hosting** (alternative, static CDN):
+`test:sync` needs Java 21+ for the Firestore emulator.
 
-```sh
-npm run build && npx firebase-tools deploy --only hosting --project YOUR_PROJECT_ID
-```
+## Deploy
 
-Data lives in each browser's local storage, so a public URL exposes no data. Use Settings → Export backup to move data between devices. Cross-device sync is a planned next step.
+One-time setup:
+
+1. Firebase console: create the project, enable **Authentication → Google**, create **Firestore** (production mode).
+2. Put the web app config in `.env.production` (not secret) and the project id in `.firebaserc`.
+3. `npx firebase login && npm run deploy` deploys Hosting, rules and indexes.
+
+### Automatic deploys
+
+`.github/workflows/ci.yml` runs both test suites on every push and PR, and deploys on merge to `main`.
+Add a repository secret `FIREBASE_SERVICE_ACCOUNT` containing a service-account JSON key with the
+**Firebase Hosting Admin** and **Firebase Rules Admin** roles (Google Cloud console → IAM → Service accounts).
+Without it, the deploy step is skipped with a warning.
 
 ## Limits, stated honestly
 
-- Check-in notifications fire while the app is open (tab or installed PWA); there is no server push yet.
+- Check-in notifications fire while the app is open (tab or installed PWA); there is no server push.
 - The timer can't verify you worked; the coach asks rather than assumes.
-- Storage is localStorage (not IndexedDB) for now; backups are JSON.
+- Conflicts resolve per item, last write wins. Editing the same task on two devices at the same moment keeps the later edit.
 - The v1 prototype's data (`carpe-diem-focus-guard-v1`) is imported automatically when served from the same origin.

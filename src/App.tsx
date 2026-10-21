@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { coachInsights, inQuietHours } from './coach'
 import { Nav, View } from './components/Coach'
 import { DriftModal, TransitionModal } from './components/modals'
+import { SyncBadge } from './components/SyncPanel'
 import { breakOver, currentBlock, finishOnboarding, getState, hasSaveError, park, sessionTimeUp, timerElapsed, useStore, useTick } from './store'
 import { countdown, dayKey } from './time'
 import { Dialog, Icon, ModalHost, Toast, closeModal, isModalOpen, openModal, toast } from './ui'
@@ -45,7 +46,7 @@ function Welcome({ nav }: { nav: Nav }) {
         <div><span className="step-num">2</span><b>Do one thing</b><p>Start with the smallest step. Park distractions, leave breadcrumbs when interrupted, switch only on purpose.</p></div>
         <div><span className="step-num">3</span><b>Review honestly</b><p>A score built on commitments kept, not hours logged. Close loops, then plan tomorrow.</p></div>
       </div>
-      <p className="note">Stuck? Tap “What’s in the way?” and the app helps you find the next small move. Everything stays private, in this browser.</p>
+      <p className="note">Stuck? Tap “What’s in the way?” and the app helps you find the next small move. To sync your phone and laptop, sign in under Settings.</p>
       <div className="actions"><span className="grow" />
         <button className="ghost" onClick={() => { finishOnboarding(); closeModal() }}>Look around first</button>
         <button className="primary" onClick={() => { finishOnboarding(); closeModal(); nav('plan', { planDate: dayKey() }) }}>Plan today <Icon name="arrow" size={15} /></button>
@@ -167,7 +168,8 @@ export default function App() {
         </nav>
         <div className="side-foot">
           <div className="kbd-hints"><span><kbd>/</kbd> park a thought</span><span><kbd>F</kbd> focus mode</span><span><kbd>D</kbd> I’m drifting</span></div>
-          <div className="privacy"><Icon name="shield" size={13} /> Private · stored on this device</div>
+          <SyncBadge />
+          <div className="privacy"><Icon name="shield" size={13} /> Private · only you can see your data</div>
         </div>
       </aside>
 

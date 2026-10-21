@@ -7,9 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview --port 4173",
-    "test:e2e": "node tests/journeys.mjs"
+    "test:e2e": "node tests/journeys.mjs",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-carpe-diem",
+    "build:emulators": "VITE_USE_EMULATORS=true tsc -b && VITE_USE_EMULATORS=true vite build --outDir dist-emu",
+    "test:sync": "firebase emulators:exec --only auth,firestore --project demo-carpe-diem \"node tests/sync.mjs\"",
+    "deploy": "npm run build && firebase deploy --only hosting,firestore"
   },
   "dependencies": {
+    "firebase": "^13.0.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
@@ -17,6 +22,7 @@
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
+    "firebase-tools": "^15.34.0",
     "playwright": "^1.56.1",
     "typescript": "5.6.3",
     "vite": "5.4.11"

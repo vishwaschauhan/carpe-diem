@@ -1,10 +1,11 @@
 // End-to-end checks of the PRD's critical user journeys against a running build.
 // Usage: npm run build && npx vite preview --port 4173 & node tests/journeys.mjs
+import { existsSync } from 'node:fs'
 import { chromium } from 'playwright'
 
 const URL = process.env.URL || 'http://localhost:4173/'
 const SHOTS = process.env.SHOTS
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' })
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined) })
 const ctx = await browser.newContext({ viewport: { width: 1360, height: 900 }, timezoneId: 'UTC', acceptDownloads: true })
 const page = await ctx.newPage()
 const errors = []

@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: User journeys (local mode)
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          sleep 3
+          npm run test:e2e
+      - name: Cross-device sync (Firebase emulators)
+        run: npm run build:emulators && npm run test:sync
+
+  # After checks pass on main, deploy the app, security rules and indexes to Firebase.
+  # Needs the FIREBASE_SERVICE_ACCOUNT repository secret (see README → Automatic deploys).
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: deploy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy to Firebase
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::warning::FIREBASE_SERVICE_ACCOUNT is not set; skipping deploy."
+            exit 0
+          fi
+          key="$RUNNER_TEMP/firebase-key.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$key"
+          GOOGLE_APPLICATION_CREDENTIALS="$key" npx firebase deploy --only hosting,firestore --non-interactive
+          rm -f "$key"

@@ -1,5 +1,5 @@
 // Offline support: network-first for pages (so deploys show up), cache-first for hashed assets.
-const CACHE = 'carpe-diem-v2'
+const CACHE = 'carpe-diem-v2.1'
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png']
 
 self.addEventListener('install', e => {
@@ -13,6 +13,10 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request
   if (req.method !== 'GET') return
+  const url = new URL(req.url)
+  // Leave Firebase and other cross-origin traffic alone (Firestore streams must not be cached).
+  if (url.origin !== location.origin && !url.hostname.startsWith('fonts.g')) return
+  if (url.pathname.startsWith('/__/')) return
   if (req.mode === 'navigate') {
     e.respondWith(fetch(req).then(res => {
       const copy = res.clone()
@@ -22,7 +26,7 @@ self.addEventListener('fetch', e => {
     return
   }
   e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
-    if (res.ok && (new URL(req.url).origin === location.origin || req.url.includes('fonts.g'))) {
+    if (res.ok) {
       const copy = res.clone()
       caches.open(CACHE).then(c => c.put(req, copy))
     }

@@ -223,6 +223,7 @@ function seed(): State {
 // ---------- Persistence ----------
 
 const KEY = 'carpe-diem-v2'
+export const LOCAL_BACKUP_KEY = 'carpe-diem-v2-before-sync'
 const V1_KEY = 'carpe-diem-focus-guard-v1'
 
 function migrateV1(s: State) {
@@ -252,7 +253,7 @@ function load(): State {
 }
 
 /** A timer left running, paused or mid-transition from an earlier day is closed out, not resumed. */
-function settleStaleTimer(s: State) {
+export function settleStaleTimer(s: State) {
   const t = s.timer
   if (t.mode === 'idle') return
   const ref = t.runStart ?? t.pausedAt ?? t.sessionStart ?? t.breakEnd
@@ -286,11 +287,25 @@ export function hasSaveError() { return saveError }
 
 export function getState() { return state }
 
+type SyncHook = (prev: State, next: State) => void
+let syncHook: SyncHook | null = null
+/** The sync engine registers here to mirror local changes to the cloud. */
+export function setSyncHook(h: SyncHook | null) { syncHook = h }
+
 /** Apply a mutation to a copy of the state, persist it, and re-render. */
 export function update(fn: (s: State) => void) {
+  const prev = state
   const next = structuredClone(state)
   fn(next)
   state = next
+  persist()
+  syncHook?.(prev, next)
+  listeners.forEach(l => l())
+}
+
+/** Apply data that arrived from the cloud. It is not written back. */
+export function applyRemote(patch: Partial<State>) {
+  state = { ...state, ...patch }
   persist()
   listeners.forEach(l => l())
 }
@@ -337,10 +352,8 @@ export function importJSON(text: string): string | null {
 }
 
 export function resetAll() {
-  localStorage.removeItem(KEY)
-  state = seed()
-  persist()
-  listeners.forEach(l => l())
+  const fresh = seed()
+  update(s => { Object.assign(s, fresh) })
 }
 
 // ---------- Selectors ----------

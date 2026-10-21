@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { BLOCK_KINDS, BlockKind, RoutineBlock, State, exportJSON, importJSON, patchSettings, resetAll, uid } from '../store'
 import { clock, dayKey } from '../time'
 import { Field, Icon, toast } from '../ui'
+import { SyncPanel } from '../components/SyncPanel'
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
@@ -39,6 +40,8 @@ export function Settings({ s }: { s: State }) {
   return (
     <div className="page narrow">
       <header className="page-head"><div><div className="eyebrow">Settings</div><h1 className="page-title">Make it yours</h1></div></header>
+
+      <SyncPanel />
 
       <section className="card pad stack-12">
         <h2>Day shape</h2>
@@ -102,13 +105,13 @@ export function Settings({ s }: { s: State }) {
 
       <section className="card pad stack-12">
         <h2>Your data</h2>
-        <p className="note flush">Everything lives in this browser. No account, no tracking. Back up regularly, and use a backup to move to another device.</p>
+        <p className="note flush">Your data is yours: no tracking, and it’s only synced to your own account when you sign in. A JSON backup is always a click away.</p>
         <div className="actions">
           <button className="secondary" onClick={download}><Icon name="download" size={15} /> Export backup</button>
           <button className="ghost" onClick={() => fileRef.current?.click()}><Icon name="upload" size={15} /> Restore backup</button>
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={e => { upload(e.target.files?.[0]); e.target.value = '' }} />
           <span className="grow" />
-          <button className="ghost danger" onClick={() => { if (confirm('Delete all Carpe Diem data on this device? This cannot be undone.')) { resetAll(); toast('All data reset.') } }}>Reset everything</button>
+          <button className="ghost danger" onClick={() => { if (confirm('Delete all Carpe Diem data? If you’re signed in, this also clears it on your other devices. This cannot be undone.')) { resetAll(); toast('All data reset.') } }}>Reset everything</button>
         </div>
       </section>
     </div>

@@ -1,6 +1,7 @@
+import { existsSync } from 'node:fs'
 import { chromium } from 'playwright'
 const out = process.argv[2]
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
+const b = await chromium.launch({ executablePath: existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined })
 const errors = []
 async function shoot(name, viewport, fn) {
   const ctx = await b.newContext({ viewport, deviceScaleFactor: 1 })

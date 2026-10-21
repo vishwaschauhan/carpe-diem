@@ -469,3 +469,12 @@ textarea.input { resize: vertical; line-height: 1.5; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Sync ---------- */
+.card-head.flush { margin-bottom: 0; }
+.sync-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.sync-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); }
+.sync-badge.s-synced { color: var(--accent); } .sync-badge.s-synced .dot { background: var(--accent); }
+.sync-badge.s-pending .dot, .sync-badge.s-connecting .dot { background: var(--gold); animation: pulse 1.2s infinite; }
+.sync-badge.s-offline .dot { background: var(--gold); }
+.sync-badge.s-error { color: var(--warn); } .sync-badge.s-error .dot { background: var(--warn); }
