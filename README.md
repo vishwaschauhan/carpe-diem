@@ -48,7 +48,7 @@ npm run dev                    # http://localhost:5173
 ```sh
 npm run build
 npx vite preview --port 4173 & npm run test:e2e        # 19 checks: the PRD's 7 critical journeys
-npm run build:emulators && npm run test:sync           # 6 checks: two devices, offline, security rules
+npm run build:emulators && npm run test:sync           # 6 checks: two devices, offline, security rules (uses .env.emulators)
 ```
 
 `test:sync` needs Java 21+ for the Firestore emulator.
@@ -57,7 +57,7 @@ npm run build:emulators && npm run test:sync           # 6 checks: two devices, 
 
 One-time setup:
 
-1. Firebase console: create the project, enable **Authentication → Google**, create **Firestore** (production mode).
+1. Firebase console (project `carpe-diem-512323`, already set up): create the project, enable **Authentication → Google**, create **Firestore** (production mode).
 2. Put the web app config in `.env.production` (not secret) and the project id in `.firebaserc`.
 3. `npx firebase login && npm run deploy` deploys Hosting, rules and indexes.
 

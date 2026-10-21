@@ -9,7 +9,7 @@
     "preview": "vite preview --port 4173",
     "test:e2e": "node tests/journeys.mjs",
     "emulators": "firebase emulators:start --only auth,firestore --project demo-carpe-diem",
-    "build:emulators": "VITE_USE_EMULATORS=true tsc -b && VITE_USE_EMULATORS=true vite build --outDir dist-emu",
+    "build:emulators": "tsc -b && vite build --mode emulators --outDir dist-emu",
     "test:sync": "firebase emulators:exec --only auth,firestore --project demo-carpe-diem \"node tests/sync.mjs\"",
     "deploy": "npm run build && firebase deploy --only hosting,firestore"
   },
