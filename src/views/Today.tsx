@@ -56,7 +56,7 @@ export function Today({ s, nav, immersive, setImmersive }: { s: State; nav: Nav;
         <div className="col">
           <Outcomes s={s} nav={nav} />
           <section className="card pad">
-            <div className="card-head"><h2>Schedule</h2><button className="text-btn" onClick={() => nav('plan', { planDate: today })}>Edit plan</button></div>
+            <div className="card-head"><h2>Schedule</h2><span className="row-actions"><button className="text-btn" onClick={() => nav('hours')}>Hour by hour</button><button className="text-btn" onClick={() => nav('plan', { planDate: today })}>Edit plan</button></span></div>
             <Timeline s={s} date={today} />
           </section>
         </div>

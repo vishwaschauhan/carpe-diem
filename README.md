@@ -19,6 +19,7 @@ Plan tonight. Execute tomorrow. A private, local-first execution and accountabil
 ## Screens
 
 - **Today**: the one thing to do now, a timer, your three outcomes, the schedule (plan vs actual, with unplanned log), the parking lot and a coach card.
+- **Hours**: a Google-Doc-style hourly sheet. Plan each hour, tick it, and write what you actually did when it didn't go to plan; unticked past hours are flagged and the coach asks about them.
 - **Plan**: close open loops, choose up to three outcomes, give each a time (routine + auto-place), commit. Brain dump with Gold/Silver.
 - **Goals**: why each goal matters, current milestone, weekly focus vs target.
 - **Review**: transparent score breakdown, wins vs needs-attention, plan vs actual, reflection, suggested takeaway, 14-day history, then shutdown → plan tomorrow.
@@ -47,7 +48,7 @@ npm run dev                    # http://localhost:5173
 
 ```sh
 npm run build
-npx vite preview --port 4173 & npm run test:e2e        # 19 checks: the PRD's 7 critical journeys
+npx vite preview --port 4173 & npm run test:e2e        # 21 checks: the PRD's 7 critical journeys + hourly sheet
 npm run build:emulators && npm run test:sync           # 6 checks: two devices, offline, security rules (uses .env.emulators)
 ```
 

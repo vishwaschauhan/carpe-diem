@@ -66,6 +66,8 @@ export interface Block {
   label: string
   taskId: string | null
   decision: null | 'rescheduled' | 'dropped'
+  /** Ticked by hand in the hourly sheet: "I did this". */
+  checked?: boolean
 }
 
 export interface RoutineBlock {
@@ -111,6 +113,14 @@ export interface DayLog {
   unplanned: { id: string; at: number; text: string }[]
   stuck: { taskId: string; reason: StuckReason; at: number }[]
   events: { at: number; text: string }[]
+  /** Hourly sheet, keyed by two-digit hour ("05"). */
+  hours?: Record<string, HourEntry>
+}
+
+export interface HourEntry {
+  plan: string
+  actual: string
+  done: boolean
 }
 
 export type TimerMode = 'idle' | 'focus' | 'paused' | 'break' | 'transition'
@@ -412,6 +422,7 @@ export function timerElapsed(t: Timer, now = Date.now()): number {
 
 /** Whether any focus session on the block's task overlapped the block window (with 10 min of grace). */
 export function blockHonored(s: State, b: Block): boolean {
+  if (b.checked) return true
   const start = stampAt(b.date, b.start) - 10 * MIN
   const end = stampAt(b.date, b.end)
   const matches = (taskId: string) => !b.taskId || b.taskId === taskId
@@ -604,6 +615,27 @@ export function rescheduleBlock(id: string): string | null {
     }
   })
   return result
+}
+
+export function setHour(date: string, hour: string, patch: Partial<HourEntry>) {
+  update(s => {
+    const d = ensureDay(s, date)
+    const hours = d.hours ?? {}
+    const cur = hours[hour] ?? { plan: '', actual: '', done: false }
+    const next = { ...cur, ...patch }
+    if (!next.plan && !next.actual && !next.done) delete hours[hour]
+    else hours[hour] = next
+    d.hours = hours
+  })
+}
+
+export function toggleBlockChecked(id: string) {
+  update(s => {
+    const b = s.blocks.find(x => x.id === id)
+    if (!b) return
+    b.checked = !b.checked
+    log(s, `${b.checked ? 'Ticked' : 'Unticked'}: ${b.label}`, b.date)
+  })
 }
 
 export function dropBlock(id: string) {

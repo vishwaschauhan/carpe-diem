@@ -5,7 +5,7 @@ import { clock, dayKey, duration, nowMin, toMin } from './time'
 
 export type CoachActionKind =
   | 'plan-today' | 'plan-tomorrow' | 'start' | 'unstick' | 'reschedule' | 'drop-block'
-  | 'review' | 'drop-task' | 'move-rest' | 'snooze'
+  | 'review' | 'drop-task' | 'move-rest' | 'snooze' | 'hours'
 
 export interface CoachAction {
   label: string
@@ -139,6 +139,27 @@ export function coachInsights(s: State, at = new Date()): Insight[] {
         body: `You have ${duration(gap)} before ${nb ? `“${nb.label}”` : 'the end of your day'}. ${paused ? `You were in the middle of “${pick.title}”.` : `Highest-priority open outcome: “${pick.title}”.`}`,
         actions: [{ label: paused ? 'Resume' : 'Start focus', kind: 'start', taskId: pick.id, minutes: Math.min(gap - 5, s.settings.defaultFocusMin), primary: true }],
         notify: true,
+      })
+    }
+  }
+
+  // The hour that just ended: planned but not ticked and nothing logged? Ask, don't assume.
+  const lastHour = Math.floor(now / 60) - 1
+  if (lastHour >= Math.floor(toMin(s.settings.dayStart) / 60) && now % 60 < 50) {
+    const key = String(lastHour).padStart(2, '0')
+    const entry = day(s, today).hours?.[key]
+    const hourBlocks = blocks.filter(b => Math.floor(toMin(b.start) / 60) === lastHour && !b.decision && b.kind !== 'break' && b.kind !== 'family')
+    const openBlocks = hourBlocks.filter(b => b.kind === 'focus' ? !blockHonored(s, b) : !b.checked)
+    const openPlan = entry?.plan && !entry.done ? entry.plan : null
+    const logged = Boolean(entry?.actual) || s.sessions.some(x => x.date === today && Math.floor(new Date(x.start).getHours()) === lastHour)
+      || (day(s, today).unplanned ?? []).some(u => new Date(u.at).getHours() === lastHour)
+    const what = openPlan ?? openBlocks[0]?.label
+    if (what && !logged) {
+      const label = `${clock(`${key}:00`)}–${clock(`${String(lastHour + 1).padStart(2, '0')}:00`)}`
+      out.push({
+        id: `hourlog-${today}-${key}`, tone: 'nudge', title: `How did ${label} go?`,
+        body: `You planned “${what}”. Tick it if it happened, or write what you did instead. Honest records beat perfect plans.`,
+        actions: [{ label: 'Log the hour', kind: 'hours', primary: true }],
       })
     }
   }

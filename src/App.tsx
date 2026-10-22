@@ -7,6 +7,7 @@ import { breakOver, currentBlock, finishOnboarding, getState, hasSaveError, park
 import { countdown, dayKey } from './time'
 import { Dialog, Icon, ModalHost, Toast, closeModal, isModalOpen, openModal, toast } from './ui'
 import { Goals } from './views/Goals'
+import { Hours } from './views/Hours'
 import { Plan } from './views/Plan'
 import { Review } from './views/Review'
 import { Settings } from './views/Settings'
@@ -15,6 +16,7 @@ import { Today } from './views/Today'
 
 const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'today', label: 'Today', icon: 'today' },
+  { id: 'hours', label: 'Hours', icon: 'clock' },
   { id: 'plan', label: 'Plan', icon: 'plan' },
   { id: 'goals', label: 'Goals', icon: 'goals' },
   { id: 'review', label: 'Review', icon: 'review' },
@@ -182,6 +184,7 @@ export default function App() {
           </button>
         )}
         {view === 'today' && <Today s={s} nav={nav} immersive={immersive} setImmersive={setImmersive} />}
+        {view === 'hours' && <Hours s={s} />}
         {view === 'plan' && <Plan s={s} date={planDate} setDate={setPlanDate} nav={nav} />}
         {view === 'goals' && <Goals s={s} />}
         {view === 'review' && <Review s={s} nav={nav} />}

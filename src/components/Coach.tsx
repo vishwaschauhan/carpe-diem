@@ -5,7 +5,7 @@ import { Icon, openModal, toast } from '../ui'
 import { StartFocus, Unstick } from './modals'
 
 export type Nav = (view: View, opts?: { planDate?: string }) => void
-export type View = 'today' | 'plan' | 'goals' | 'review' | 'settings'
+export type View = 'today' | 'hours' | 'plan' | 'goals' | 'review' | 'settings'
 
 export function runCoachAction(a: CoachAction, nav: Nav) {
   const s = getState()
@@ -14,6 +14,7 @@ export function runCoachAction(a: CoachAction, nav: Nav) {
     case 'plan-today': nav('plan', { planDate: dayKey() }); break
     case 'plan-tomorrow': nav('review'); break
     case 'review': nav('review'); break
+    case 'hours': nav('hours'); break
     case 'start': if (task) openModal(<StartFocus task={task} minutes={a.minutes} />); break
     case 'unstick': if (task) openModal(<Unstick task={task} />); break
     case 'reschedule': {

@@ -76,7 +76,7 @@ export function FocusCard({ s, nav, immersive, onImmersive }: { s: State; nav: N
 
       <div className="timer-row">
         <div className="ring" aria-label={`Timer ${countdown(remaining)}`}>
-          <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r={R} className="ring-track" /><circle cx="60" cy="60" r={R} className="ring-fill" strokeDasharray={C} strokeDashoffset={C * (1 - Math.min(1, Math.max(0, progress)))} /></svg>
+          <svg viewBox="0 0 120 120"><defs><linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#6a5cff" /><stop offset="55%" stopColor="#0a84ff" /><stop offset="100%" stopColor="#22c3ee" /></linearGradient></defs><circle cx="60" cy="60" r={R} className="ring-track" /><circle cx="60" cy="60" r={R} className="ring-fill" strokeDasharray={C} strokeDashoffset={C * (1 - Math.min(1, Math.max(0, progress)))} /></svg>
           <div className="ring-text">
             <span className="ring-time">{focusing || paused || onBreak ? countdown(remaining) : duration(task.estimateMin)}</span>
             <span className="ring-sub">{onBreak ? 'break left' : focusing || paused ? 'remaining' : 'estimate'}</span>

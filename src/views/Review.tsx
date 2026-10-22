@@ -5,6 +5,7 @@ import { scoreDay } from '../score'
 import { AREAS, State, StuckReason, day, outcomesFor, patchDay } from '../store'
 import { addDays, dayKey, duration, longDate, relativeDay, shortDate } from '../time'
 import { Icon, Progress, toast } from '../ui'
+import { hourInfos } from './Hours'
 
 const STUCK_LABEL: Record<StuckReason, string> = {
   unclear: 'Unclear next step', big: 'Felt too big', boring: 'Boring', anxious: 'Worry about quality', tired: 'Low energy', unimportant: 'Not important',
@@ -48,6 +49,12 @@ export function Review({ s, nav }: { s: State; nav: Nav }) {
   const maxArea = Math.max(1, ...byArea.map(a => a.min))
   const stuckCounts = Object.entries(d.stuck.reduce<Record<string, number>>((acc, x) => { acc[x.reason] = (acc[x.reason] ?? 0) + 1; return acc }, {}))
   const history = Array.from({ length: 14 }, (_, i) => addDays(today, i - 13)).map(k => ({ k, score: s.days[k] || outcomesFor(s, k).length ? scoreDay(s, k).score : null }))
+
+  const hrs = hourInfos(s, date)
+  const hPlanned = hrs.filter(r => r.planned).length
+  const hDone = hrs.filter(r => r.status === 'done').length
+  const hLogged = hrs.filter(r => r.status === 'logged').length
+  const hMissing = hrs.filter(r => r.status === 'needs-log').length
 
   const shutdown = () => {
     patchDay(date, { reflection, takeaway, shutdownAt: Date.now() })
@@ -103,6 +110,14 @@ export function Review({ s, nav }: { s: State; nav: Nav }) {
           <div><b>{d.redirects}</b><span>Drifts caught</span></div>
           <div><b>{d.recovered}/{d.interruptions}</b><span>Recovered</span></div>
         </div>
+        {hPlanned > 0 && (
+          <button className="hours-strip" onClick={() => nav('hours')}>
+            <span><b>{hDone}</b> of {hPlanned} planned hours went to plan</span>
+            {hLogged > 0 && <span className="c-logged"><b>{hLogged}</b> logged differently</span>}
+            {hMissing > 0 && <span className="c-needs"><b>{hMissing}</b> still unaccounted</span>}
+            <Icon name="arrow" size={14} />
+          </button>
+        )}
         <div className="outcomes review-outcomes">
           {outcomes.map(t => (
             <div key={t.id} className={`outcome ${t.status === 'done' ? 'done' : ''}`}>
