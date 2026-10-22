@@ -37,11 +37,11 @@ console.log('Scenario 1: morning start')
 await step('welcome explains the method and opens planning', async () => {
   await expectText('Don’t just plan your day')
   await page.locator('.dialog').getByRole('button', { name: /Plan today/ }).click()
-  await expectText('Choose up to three outcomes')
+  await expectText('Choose what matters')
 })
 await step('add three concrete outcomes and mark the frog', async () => {
   const add = async (title, next, done, goal, frog) => {
-    await page.getByRole('button', { name: 'New outcome' }).click()
+    await page.getByRole('button', { name: 'With details…' }).click()
     await page.getByPlaceholder('e.g. Ship the review').fill(title)
     if (goal) await page.locator('.dialog select').first().selectOption({ label: goal })
     await page.getByPlaceholder('Open the PR and read').fill(next)
@@ -55,15 +55,15 @@ await step('add three concrete outcomes and mark the frog', async () => {
   await expectText('Three is the limit')
   if (!(await page.locator('.frog-toggle.on').count())) throw new Error('no frog marked')
 })
-await step('routine was applied and outcomes auto-place frog first', async () => {
+await step('routine was applied and priorities are placed on the calendar, frog first', async () => {
   await expectText('Workout')
-  await page.getByRole('button', { name: /Auto-place outcomes/ }).click()
-  await expectText(/Placed 3 blocks/)
-  const labels = await page.locator('.block.k-focus .block-label').allInnerTexts()
+  await page.getByRole('button', { name: /Place them, frog first/ }).click()
+  await expectText(/Placed 3 sessions/)
+  const labels = await page.locator('.pblock.k-focus .pb-title').allInnerTexts()
   if (!labels[0].includes('Design doc')) throw new Error(`first focus block is ${labels[0]}`)
 })
-await step('commit with an if-then plan and land on Today', async () => {
-  await page.getByRole('button', { name: 'I commit to this plan' }).click()
+await step('Start day commits the plan and lands on Today', async () => {
+  await page.getByRole('button', { name: /Start day/ }).click()
   await expectText('Your commitment:')
   await expectText('Design doc for agent memory')
   await shot('j1-today-planned')
