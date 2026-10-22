@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { MIN, addDays, dayKey, fromMin, nowMin, stampAt, toMin } from './time'
+import { DAY_END, MIN_LEN, Span, conflictsFor, effortOf, firstFit, hhmm, isExclusive, nearestFree, sessionLength, splitPlan } from './schedule'
 
 // ---------- Domain model ----------
 
@@ -68,6 +69,8 @@ export interface Block {
   decision: null | 'rescheduled' | 'dropped'
   /** Ticked by hand in the hourly sheet: "I did this". */
   checked?: boolean
+  /** Explicit exception: this block may overlap others (e.g. a podcast during a commute). */
+  shared?: boolean
 }
 
 export interface RoutineBlock {
@@ -442,7 +445,7 @@ export function focusMsForTaskOnDay(s: State, taskId: string, date: string): num
 export function freeGaps(s: State, date: string, from: number): { start: number; end: number }[] {
   const dayStart = Math.max(toMin(s.settings.dayStart), from)
   const dayEnd = toMin(s.settings.dayEnd)
-  const busy = blocksFor(s, date).filter(b => !b.decision).map(b => [toMin(b.start), toMin(b.end)] as const)
+  const busy = blocksFor(s, date).filter(isExclusive).map(b => [toMin(b.start), toMin(b.end)] as const)
   const gaps: { start: number; end: number }[] = []
   let cursor = dayStart
   for (const [a, b] of busy) {
@@ -561,29 +564,10 @@ export function applyRoutine(date: string) {
     const dow = new Date(stampAt(date, '12:00')).getDay()
     for (const r of s.settings.routine.filter(r => r.days.includes(dow))) {
       const exists = s.blocks.some(b => b.date === date && b.start === r.start && b.label === r.label)
-      if (!exists) s.blocks.push({ id: uid(), date, start: r.start, end: r.end, kind: r.kind, label: r.label, taskId: null, decision: null })
+      const clash = conflictsFor(s, date, { start: toMin(r.start), end: toMin(r.end) }).length > 0
+      if (!exists && !clash) s.blocks.push({ id: uid(), date, start: r.start, end: r.end, kind: r.kind, label: r.label, taskId: null, decision: null })
     }
   })
-}
-
-/** Place each unscheduled outcome into the earliest free gap, frog first, with a 10 minute buffer. */
-export function autoPlace(date: string): string[] {
-  const placed: string[] = []
-  update(s => {
-    const from = date === dayKey() ? Math.ceil(nowMin() / 5) * 5 : 0
-    const scheduled = new Set(s.blocks.filter(b => b.date === date && b.taskId).map(b => b.taskId))
-    for (const t of outcomesFor(s, date).filter(t => t.status === 'ready' && !scheduled.has(t.id))) {
-      const gaps = freeGaps(s, date, from)
-      const len = Math.max(15, Math.min(t.estimateMin, 120))
-      const gap = gaps.find(g => g.end - g.start >= len + 10) ?? gaps.find(g => g.end - g.start >= 25)
-      if (!gap) continue
-      const start = gap.start === from ? gap.start : gap.start + 5
-      const end = Math.min(start + len, gap.end - 5)
-      s.blocks.push({ id: uid(), date, start: fromMin(start), end: fromMin(end), kind: 'focus', label: t.title, taskId: t.id, decision: null })
-      placed.push(t.title)
-    }
-  })
-  return placed
 }
 
 export function commitPlan(date: string, intention: string) {
@@ -615,6 +599,87 @@ export function rescheduleBlock(id: string): string | null {
     }
   })
   return result
+}
+
+// ---------- Actions: scheduling (all validated by ./schedule) ----------
+
+export type PlaceResult =
+  | { ok: true; id: string }
+  | { ok: false; reason: 'conflict' | 'invalid' | 'full'; conflict?: Block; suggestion: number | null }
+
+export interface BlockInput { date: string; start: number; end: number; kind: BlockKind; label: string; taskId: string | null; shared?: boolean }
+
+function check(s: State, date: string, span: Span, exceptId: string | null, shared?: boolean): PlaceResult | null {
+  if (span.end - span.start < MIN_LEN || span.start < 0 || span.end > DAY_END) return { ok: false, reason: 'invalid', suggestion: null }
+  if (shared) return null
+  const clash = conflictsFor(s, date, span, exceptId)
+  if (!clash.length) return null
+  const notBefore = date === dayKey() && span.start >= nowMin() ? Math.ceil(nowMin() / 5) * 5 : 0
+  return { ok: false, reason: 'conflict', conflict: clash[0], suggestion: nearestFree(s, date, span.end - span.start, span.start, exceptId, notBefore) }
+}
+
+/** Create a block if it doesn't overlap an exclusive one; otherwise return the nearest free start. */
+export function placeBlock(input: BlockInput): PlaceResult {
+  const span = { start: input.start, end: input.end }
+  const bad = check(state, input.date, span, null, input.shared)
+  if (bad) return bad
+  const id = uid()
+  update(s => {
+    s.blocks.push({ id, date: input.date, start: hhmm(span.start), end: hhmm(span.end), kind: input.kind, label: input.label, taskId: input.taskId, decision: null, ...(input.shared ? { shared: true } : {}) })
+    if (input.taskId) log(s, `Scheduled ${hhmm(span.start)}: ${input.label}`, input.date)
+  })
+  return { ok: true, id }
+}
+
+/** Move, resize or edit a block, with the same overlap rules as creating one. */
+export function retimeBlock(id: string, patch: { start?: number; end?: number; date?: string; kind?: BlockKind; label?: string; taskId?: string | null; shared?: boolean }): PlaceResult {
+  const b = state.blocks.find(x => x.id === id)
+  if (!b) return { ok: false, reason: 'invalid', suggestion: null }
+  const date = patch.date ?? b.date
+  const span = { start: patch.start ?? toMin(b.start), end: patch.end ?? (b.end === '23:59' ? DAY_END : toMin(b.end)) }
+  const shared = patch.shared ?? b.shared
+  const bad = check(state, date, span, id, shared)
+  if (bad) return bad
+  update(s => {
+    const x = s.blocks.find(y => y.id === id)
+    if (!x) return
+    Object.assign(x, { date, start: hhmm(span.start), end: hhmm(span.end), decision: null })
+    if (patch.kind) x.kind = patch.kind
+    if (patch.label !== undefined) x.label = patch.label
+    if (patch.taskId !== undefined) x.taskId = patch.taskId
+    if (shared) x.shared = true
+    else delete x.shared
+  })
+  return { ok: true, id }
+}
+
+/** Give a task one more session at the earliest free time that fits what's left of it. */
+export function findTimeFor(taskId: string, date: string): PlaceResult {
+  const t = state.tasks.find(x => x.id === taskId)
+  if (!t) return { ok: false, reason: 'invalid', suggestion: null }
+  let length = sessionLength(effortOf(state, t))
+  let at = firstFit(state, date, length)
+  while (at === null && length > 25) { length = Math.max(25, length - 15); at = firstFit(state, date, length) }
+  if (at === null) return { ok: false, reason: 'full', suggestion: null }
+  return placeBlock({ date, start: at, end: at + length, kind: 'focus', label: t.title, taskId: t.id })
+}
+
+/** Place a task's remaining effort as several sessions in the free gaps. Returns how many were placed. */
+export function splitTask(taskId: string, date: string, chunk = 90): number {
+  const t = state.tasks.find(x => x.id === taskId)
+  if (!t) return 0
+  const spans = splitPlan(state, date, effortOf(state, t).remaining, chunk)
+  spans.forEach(sp => placeBlock({ date, start: sp.start, end: sp.end, kind: 'focus', label: t.title, taskId: t.id }))
+  return spans.length
+}
+
+/** One session for each unscheduled priority, frog first. Never moves anything already placed. */
+export function placePriorities(date: string): string[] {
+  const placed: string[] = []
+  for (const t of outcomesFor(state, date).filter(t => t.status === 'ready' && effortOf(state, t).scheduled === 0)) {
+    if (findTimeFor(t.id, date).ok) placed.push(t.title)
+  }
+  return placed
 }
 
 export function setHour(date: string, hour: string, patch: Partial<HourEntry>) {

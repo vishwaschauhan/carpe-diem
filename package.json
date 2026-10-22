@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview --port 4173",
-    "test:e2e": "node tests/journeys.mjs",
+    "test:e2e": "node tests/journeys.mjs && node tests/planner.mjs",
     "emulators": "firebase emulators:start --only auth,firestore --project demo-carpe-diem",
     "build:emulators": "tsc -b && vite build --mode emulators --outDir dist-emu",
     "test:sync": "firebase emulators:exec --only auth,firestore --project demo-carpe-diem \"node tests/sync.mjs\"",

@@ -20,7 +20,7 @@ Plan tonight. Execute tomorrow. A private, local-first execution and accountabil
 
 - **Today**: the one thing to do now, a timer, your three outcomes, the schedule (plan vs actual, with unplanned log), the parking lot and a coach card.
 - **Hours**: a Google-Doc-style hourly sheet. Plan each hour, tick it, and write what you actually did when it didn't go to plan; unticked past hours are flagged and the coach asks about them.
-- **Plan**: close open loops, choose up to three outcomes, give each a time (routine + auto-place), commit. Brain dump with Gold/Silver.
+- **Plan**: three steps. Choose up to three outcomes; place work on a visual day timeline (drag a task onto free time, click a slot, drag to move, pull the bottom edge to resize); Start day. Tasks and scheduled sessions are separate, so one task can have many sessions and shows estimate, scheduled and left to schedule. Exclusive blocks can't overlap: every create, move, resize and edit goes through `src/schedule.ts`, which offers the nearest free time instead ("Allow overlap" is the explicit exception). Capacity summary and simple, rule-based suggestions (find free time, split into sessions, fully booked, over capacity). Backlog and brain dump sit in the same tray.
 - **Goals**: why each goal matters, current milestone, weekly focus vs target.
 - **Review**: transparent score breakdown, wins vs needs-attention, plan vs actual, reflection, suggested takeaway, 14-day history, then shutdown → plan tomorrow.
 - **Settings**: day shape, daily routine, check-in notifications and quiet hours, score weights, backup export/import.
@@ -48,7 +48,7 @@ npm run dev                    # http://localhost:5173
 
 ```sh
 npm run build
-npx vite preview --port 4173 & npm run test:e2e        # 21 checks: the PRD's 7 critical journeys + hourly sheet
+npx vite preview --port 4173 & npm run test:e2e        # 21 journey checks + 14 day-planner checks
 npm run build:emulators && npm run test:sync           # 6 checks: two devices, offline, security rules (uses .env.emulators)
 ```
 

@@ -12,7 +12,10 @@ export function focusTask(s: State): Task | undefined {
   if (active && (active.status === 'ready' || active.status === 'inbox' || s.timer.mode !== 'idle')) return active
   const open = outcomesFor(s, today).filter(t => t.status === 'ready')
   const block = currentBlock(s)
-  return (block?.taskId ? open.find(t => t.id === block.taskId) : undefined) ?? open.find(t => t.frog) ?? open[0]
+  // A scheduled session wins, even for a backlog task scheduled outside the day's priorities.
+  const scheduled = byId(block?.taskId)
+  const usable = scheduled && (scheduled.status === 'ready' || scheduled.status === 'inbox') ? scheduled : undefined
+  return usable ?? open.find(t => t.frog) ?? open[0]
 }
 
 export function FocusCard({ s, nav, immersive, onImmersive }: { s: State; nav: Nav; immersive: boolean; onImmersive: (v: boolean) => void }) {

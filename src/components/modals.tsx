@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import {
-  AREAS, Area, BLOCK_KINDS, Block, BlockKind, StuckReason, Task, addBlock, addOutcome, addTask, backlog, breakOver, clearTransition,
+  AREAS, Area, BLOCK_KINDS, Block, BlockKind, StuckReason, Task, addOutcome, addTask, backlog, breakOver, clearTransition,
   completeTask, currentBlock, deleteBlock, deleteTask, dropTask, finishSession, getState, noteReturn, outcomesFor, park,
-  pauseFocus, recordStuck, saveBlock, saveTask, startBreak, startFocus, switchTo, unplanTask,
+  pauseFocus, placeBlock, recordStuck, retimeBlock, saveTask, startBreak, startFocus, switchTo, unplanTask,
 } from '../store'
 import { clock, dayKey, fromMin, nowMin, toMin } from '../time'
 import { Dialog, Field, Icon, closeModal, openModal, toast } from '../ui'
+import { describeConflict } from '../schedule'
 
 const DURATIONS = [5, 25, 50, 90]
 
@@ -414,9 +415,16 @@ export function BlockEditor({ date, block, start }: { date: string; block?: Bloc
     e.preventDefault()
     if (toMin(to) <= toMin(from)) { toast('End must be after start.'); return }
     const t = outcomes.find(x => x.id === taskId)
-    const patch = { start: from, end: to, kind, label: label.trim() || t?.title || BLOCK_KINDS.find(k => k.id === kind)!.label, taskId: kind === 'focus' ? taskId || null : null }
-    if (block) saveBlock(block.id, { ...patch, decision: null })
-    else addBlock({ date, ...patch })
+    const patch = { start: toMin(from), end: toMin(to), kind, label: label.trim() || t?.title || BLOCK_KINDS.find(k => k.id === kind)!.label, taskId: kind === 'focus' ? taskId || null : null }
+    const r = block ? retimeBlock(block.id, patch) : placeBlock({ date, ...patch })
+    if (!r.ok) {
+      if (r.reason === 'conflict' && r.conflict) {
+        const l = patch.end - patch.start
+        if (r.suggestion !== null) { setFrom(fromMin(r.suggestion)); setTo(fromMin(r.suggestion + l)) }
+        toast(`That overlaps ${describeConflict(r.conflict)}.${r.suggestion !== null ? ` Moved the times to the nearest free slot, ${clock(fromMin(r.suggestion))}. Save again to keep it.` : ' No free slot that long today.'}`)
+      } else toast('That time doesn’t work. Check the start and end.')
+      return
+    }
     closeModal()
   }
   return (
