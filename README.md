@@ -69,7 +69,8 @@ Add a repository secret `FIREBASE_SERVICE_ACCOUNT` containing a service-account 
 Firebase Admin SDK key (Firebase console → Project settings → Service accounts → Generate new private key), or for
 least privilege create a dedicated service account with **Firebase Hosting Admin**, **Firebase Rules Admin**,
 **Cloud Datastore Index Admin** and **Service Usage Consumer** (Google Cloud console → IAM → Service accounts).
-Without it, the deploy step is skipped with a warning.
+Without it, the deploy step is skipped with a warning. CI deploys Hosting only; deploy rule or index changes with `npm run deploy`
+(the service account would otherwise also need Service Usage Consumer, Firebase Rules Admin and Datastore Index Admin).
 
 ## Limits, stated honestly
 
