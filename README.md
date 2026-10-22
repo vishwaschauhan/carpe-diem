@@ -64,8 +64,10 @@ One-time setup:
 ### Automatic deploys
 
 `.github/workflows/ci.yml` runs both test suites on every push and PR, and deploys on merge to `main`.
-Add a repository secret `FIREBASE_SERVICE_ACCOUNT` containing a service-account JSON key with the
-**Firebase Hosting Admin** and **Firebase Rules Admin** roles (Google Cloud console → IAM → Service accounts).
+Add a repository secret `FIREBASE_SERVICE_ACCOUNT` containing a service-account JSON key. Either generate the
+Firebase Admin SDK key (Firebase console → Project settings → Service accounts → Generate new private key), or for
+least privilege create a dedicated service account with **Firebase Hosting Admin**, **Firebase Rules Admin**,
+**Cloud Datastore Index Admin** and **Service Usage Consumer** (Google Cloud console → IAM → Service accounts).
 Without it, the deploy step is skipped with a warning.
 
 ## Limits, stated honestly
